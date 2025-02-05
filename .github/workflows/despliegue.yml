@@ -3,20 +3,23 @@ name: CI/CD Pipeline for HolaMundoMultilenguaje
 on:
   push:
     branches:
-      - master  # Verifica si realmente estás usando la rama 'master', o 'main' si es necesario
+      - master  # Asegúrate de que estés usando 'main' si esa es tu rama principal
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2  # O considera usar @v3 si es necesario
+        uses: actions/checkout@v2
+
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+
       - name: Install dependencies
         run: composer install
+
       - name: Run tests
         run: ./vendor/bin/phpunit tests
 
@@ -25,33 +28,32 @@ jobs:
     needs: test
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2  # O considera usar @v3 si es necesario
+        uses: actions/checkout@v2
+
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+
       - name: Install dependencies
         run: composer install
+
       - name: Deploy to server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.HOST }}
           USERNAME: ${{ secrets.USERNAME }}
-          DEPLOY_PATH: "/var/www/html/$DEPLOY_PATH"  # Cambiar al path de /var/www/html
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          # Verifica el usuario y los permisos
-          whoami
-          ls -la /home/ubuntu
+          # Crear y configurar clave SSH
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
           
-          # Crear directorio .ssh y configurar clave privada
-          sudo mkdir -p /home/ubuntu/.ssh
-          echo "$SSH_PRIVATE_KEY" | sudo tee /home/ubuntu/.ssh/id_rsa > /dev/null
-          sudo chmod 600 /home/ubuntu/.ssh/id_rsa
+          # Crear directorio de despliegue si no existe
+          ssh -o StrictHostKeyChecking=no $USERNAME@$HOST "mkdir -p $DEPLOY_PATH"
           
-          # Usar SSH para crear el directorio de despliegue en /var/www/html
-          ssh -o StrictHostKeyChecking=no $USERNAME@$HOST "sudo mkdir -p $DEPLOY_PATH"
-          
-          # Sincronizar los archivos de la aplicación al servidor
+          # Sincronizar archivos al servidor
           rsync -avz --delete --no-t --exclude 'tests' --exclude '.git' . $USERNAME@$HOST:$DEPLOY_PATH
           
           # Ejecutar Composer install en el servidor
