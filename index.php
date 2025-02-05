@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
  <div class="container">
- <h1>Generador aleatorio de merfjerjis reyesdasdsa comom estwewean</h1>
+ <h1>Generador aleatorio de merfjerasddsajis reyesdasdsa comom estwewean</h1>
  <form method="post">
  <button type="submit">Generar</button>
  </form>
