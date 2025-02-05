@@ -39,14 +39,23 @@ jobs:
           USERNAME: ${{ secrets.USERNAME }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          # Use SSH to create the deploy path if it doesn't exist
+          # Verifica el usuario y los permisos
+          whoami
+          ls -la /home/ubuntu
+          
+          # Crear directorio .ssh y configurar clave privada
+          sudo mkdir -p /home/ubuntu/.ssh
+          echo "$SSH_PRIVATE_KEY" | sudo tee /home/ubuntu/.ssh/id_rsa > /dev/null
+          sudo chmod 600 /home/ubuntu/.ssh/id_rsa
+          
+          # Usar SSH para crear el directorio de despliegue en el servidor
           ssh -o StrictHostKeyChecking=no $USERNAME@$HOST "mkdir -p $DEPLOY_PATH"
-          # Sync the application files to the server
+          
+          # Sincronizar los archivos de la aplicación al servidor
           rsync -avz --delete --no-t --exclude 'tests' --exclude '.git' . $USERNAME@$HOST:$DEPLOY_PATH
-          # Optionally, run Composer install on the server
+          
+          # Ejecutar Composer install en el servidor
           ssh -o StrictHostKeyChecking=no $USERNAME@$HOST "cd $DEPLOY_PATH && composer install --no-dev --optimize-autoloader"
-          # Restart Apache if needed
+          
+          # Reiniciar Apache si es necesario
           ssh -o StrictHostKeyChecking=no $USERNAME@$HOST "sudo systemctl restart apache2"
